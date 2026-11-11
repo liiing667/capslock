@@ -70,6 +70,90 @@ func MakeFunc() int {
 	return f1()
 }
 
+// CallThroughReflect calls a function value using reflect.Value.Call.
+func CallThroughReflect(fn any) int {
+	return int(reflect.ValueOf(fn).Call(nil)[0].Int())
+}
+
+// ReflectCallback passes an interesting callback to a reflect wrapper.
+func ReflectCallback() int {
+	return CallThroughReflect(callnet.Foo)
+}
+
+// CallValueThroughReflect calls a function held in a reflect.Value parameter.
+func CallValueThroughReflect(v reflect.Value) int {
+	return int(v.Call(nil)[0].Int())
+}
+
+// ReflectValueCallback passes an interesting callback as a reflect.Value.
+func ReflectValueCallback() int {
+	return CallValueThroughReflect(reflect.ValueOf(callnet.Foo))
+}
+
+// SetFunc sets a func variable through reflect.Value.Set.
+func SetFunc(dst, fn any) {
+	reflect.ValueOf(dst).Elem().Set(reflect.ValueOf(fn))
+}
+
+// ReflectSetCallback replaces a func variable with an interesting callback.
+func ReflectSetCallback() int {
+	f := func() int { return 42 }
+	SetFunc(&f, callnet.Foo)
+	return f()
+}
+
+// MakeReflectCallback creates a function which calls an interesting callback.
+func MakeReflectCallback() func() int {
+	t := reflect.TypeOf(func() int { return 0 })
+	return reflect.MakeFunc(t, func([]reflect.Value) []reflect.Value {
+		return []reflect.Value{reflect.ValueOf(callnet.Foo())}
+	}).Interface().(func() int)
+}
+
+// CallMakeReflectCallback invokes a function created by reflect.MakeFunc.
+func CallMakeReflectCallback() int {
+	return MakeReflectCallback()()
+}
+
+func safeReflectCallback() int {
+	return 42
+}
+
+var unknownCallback any
+
+func safeReflectCall(fn any) int {
+	return int(reflect.ValueOf(fn).Call(nil)[0].Int())
+}
+
+func unknownReflectCall(fn any) int {
+	return int(reflect.ValueOf(fn).Call(nil)[0].Int())
+}
+
+// ReflectSafeCallback passes a safe callback through a reflect wrapper.
+func ReflectSafeCallback() int {
+	return safeReflectCall(safeReflectCallback)
+}
+
+// ReflectUnknownCallback passes a callback which is not traceable in this
+// program.  The existing REFLECT/UNANALYZED behavior should be preserved.
+func ReflectUnknownCallback() int {
+	return unknownReflectCall(unknownCallback)
+}
+
+func identity[T any](x T) T {
+	return x
+}
+
+func genericIdentityReflectCall(fn any) int {
+	return int(reflect.ValueOf(fn).Call(nil)[0].Int())
+}
+
+// ReflectGenericIdentityCallback passes a callback returned by a generic
+// identity wrapper through reflect.
+func ReflectGenericIdentityCallback() int {
+	return genericIdentityReflectCall(identity(callnet.Foo))
+}
+
 // TypeConfusionWithNewAt modifies a func pointer using reflect.NewAt and
 // (reflect.Value).Set.
 func TypeConfusionWithNewAt() int {

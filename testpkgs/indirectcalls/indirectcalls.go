@@ -90,3 +90,15 @@ func MaybeChmod(r io.Reader) {
 		c.Chmod(0)
 	}
 }
+
+func chmodInterface(r io.Reader) interface {
+	Chmod(os.FileMode) error
+} {
+	return r.(interface{ Chmod(os.FileMode) error })
+}
+
+// MaybeChmodViaHelper calls Chmod on an interface value returned by a helper
+// which performs the method-set type assertion.
+func MaybeChmodViaHelper(r io.Reader) {
+	chmodInterface(r).Chmod(0)
+}

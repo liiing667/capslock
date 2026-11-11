@@ -26,6 +26,7 @@ import (
 	"github.com/google/capslock/testpkgs/usecgo"
 	"github.com/google/capslock/testpkgs/usegenerics"
 	"github.com/google/capslock/testpkgs/uselinkname"
+	"github.com/google/capslock/testpkgs/usereflect"
 	"github.com/google/capslock/testpkgs/useunsafe"
 )
 
@@ -333,4 +334,34 @@ func UseBigIntRand() int {
 	x := big.NewInt(12345)
 	x = x.Rand(r, x)
 	return int(x.Int64())
+}
+
+// ReflectCallback calls a function passed through a reflect wrapper.
+func ReflectCallback() int {
+	return usereflect.ReflectCallback() + 1
+}
+
+// ReflectValueCallback calls a function passed as a reflect.Value.
+func ReflectValueCallback() int {
+	return usereflect.ReflectValueCallback() + 1
+}
+
+// ReflectSetCallback sets a func variable through a reflect wrapper.
+func ReflectSetCallback() int {
+	return usereflect.ReflectSetCallback() + 1
+}
+
+// ReflectMakeCallback calls a function created by reflect.MakeFunc.
+func ReflectMakeCallback() int {
+	return usereflect.CallMakeReflectCallback() + 1
+}
+
+// GenericReflectCallback passes a callback through a generic reflect wrapper.
+func GenericReflectCallback() int {
+	return usegenerics.CallGenericReflect() + 1
+}
+
+// GenericCallback passes a callback to a generic wrapper.
+func GenericCallback() int {
+	return usegenerics.CallGenericCallback() + 1
 }

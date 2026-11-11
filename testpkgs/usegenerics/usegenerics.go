@@ -10,6 +10,7 @@ package usegenerics
 import (
 	"net"
 	"os"
+	"reflect"
 	"sync/atomic"
 )
 
@@ -59,4 +60,32 @@ func NestedFunction[T i](a T, b int) func() int {
 func CallNestedFunction() int {
 	var a a = 1
 	return NestedFunction(a, 3)() + 1
+}
+
+func renameCallback() int {
+	if err := os.Rename("/tmp/12345", "/tmp/12345"); err != nil {
+		return 1
+	}
+	return 0
+}
+
+// CallGeneric invokes a generic callback parameter.
+func CallGeneric[T ~func() int](f T) int {
+	return f()
+}
+
+// CallGenericCallback passes an interesting callback to a generic wrapper.
+func CallGenericCallback() int {
+	return CallGeneric(renameCallback)
+}
+
+// CallThroughReflect calls a generic callback parameter through reflect.
+func CallThroughReflect[T any](f T) int {
+	return int(reflect.ValueOf(f).Call(nil)[0].Int())
+}
+
+// CallGenericReflect passes an interesting callback to a generic reflect
+// wrapper.
+func CallGenericReflect() int {
+	return CallThroughReflect(renameCallback)
 }

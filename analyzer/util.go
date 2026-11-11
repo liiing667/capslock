@@ -207,6 +207,7 @@ func buildGraph(pkgs []*packages.Package, populateSyntax bool) (*callgraph.Graph
 	ssaProg.Build()
 	allFunctions := ssautil.AllFunctions(ssaProg)
 	graph := vta.CallGraph(allFunctions, nil)
+	addCallbackEdges(graph, allFunctions)
 	return graph, ssaProg, allFunctions
 }
 

@@ -124,6 +124,8 @@ func TestExpectedOutput(t *testing.T) {
 		{Fn: []string{"indirectcalls.CallOsViaInterfaceMethod", "os.Getuid"}},
 		{Fn: []string{"indirectcalls.CallOsViaStructField", "os.Getuid"}},
 		{Fn: []string{`indirectcalls.myStruct\).foo`, `os.Getuid`}},
+		{Fn: []string{`indirectcalls.MaybeChmod`, `\(\*os.File\).Chmod`}},
+		{Fn: []string{`indirectcalls.MaybeChmodViaHelper`, `\(\*os.File\).Chmod`}},
 		{Fn: []string{"initfn.init"}, Cap: "REFLECT"},
 		{Fn: []string{"initfn.init"}, Cap: "UNSAFE_POINTER"},
 		{Fn: []string{"initfn.init", "net.LookupIP"}},
@@ -153,6 +155,12 @@ func TestExpectedOutput(t *testing.T) {
 		{Fn: []string{"transitive.MultipleCapabilities", "os.Getpid"}},
 		{Fn: []string{"transitive.Net", "net.LookupIP"}},
 		{Fn: []string{"transitive.Os", "os.Getpid"}},
+		{Fn: []string{"transitive.GenericCallback", "usegenerics.CallGenericCallback", `usegenerics.CallGeneric\[func\(\) int\]`, "usegenerics.renameCallback", "os.Rename"}},
+		{Fn: []string{"transitive.GenericReflectCallback", "usegenerics.CallGenericReflect", `usegenerics.CallThroughReflect\[func\(\) int\]`, "usegenerics.renameCallback", "os.Rename"}},
+		{Fn: []string{"transitive.ReflectCallback", "usereflect.ReflectCallback", "usereflect.CallThroughReflect", "callnet.Foo", "net.LookupIP"}},
+		{Fn: []string{"transitive.ReflectMakeCallback", "usereflect.CallMakeReflectCallback", "usereflect.MakeReflectCallback", `usereflect.MakeReflectCallback\$[0-9]+`, "callnet.Foo", "net.LookupIP"}},
+		{Fn: []string{"transitive.ReflectSetCallback", "usereflect.ReflectSetCallback", "usereflect.SetFunc", "callnet.Foo", "net.LookupIP"}},
+		{Fn: []string{"transitive.ReflectValueCallback", "usereflect.ReflectValueCallback", "usereflect.CallValueThroughReflect", "callnet.Foo", "net.LookupIP"}},
 		{Fn: []string{"transitive.UninterestingSyncPool"}, Cap: "UNANALYZED"},
 		{Fn: []string{"transitive.Unsafe"}, Cap: "UNSAFE_POINTER"},
 		{Fn: []string{`transitive.UseBigIntRand`, `big.Int..Rand`, `transitive.src..Int63`, `net.LookupIP`}},
@@ -189,6 +197,8 @@ func TestExpectedOutput(t *testing.T) {
 		{Fn: []string{"usereflect.CopyValueInMultipleAssignmentViaPointer"}, Cap: "REFLECT"},
 		{Fn: []string{"usereflect.CopyValueInStructFieldViaPointer"}, Cap: "REFLECT"},
 		{Fn: []string{"usereflect.CopyValueViaPointer"}, Cap: "REFLECT"},
+		{Fn: []string{"usereflect.ReflectGenericIdentityCallback", "usereflect.genericIdentityReflectCall", "callnet.Foo", "net.LookupIP"}},
+		{Fn: []string{"usereflect.ReflectUnknownCallback", "usereflect.unknownReflectCall", `\(reflect.Value\)\.Call`}, Cap: "REFLECT"},
 		{Fn: []string{`usereflect.RangeValueTwo\$1`}, Cap: `REFLECT`},
 		{Fn: []string{`usereflect.RangeValueTwo\$2`}, Cap: `REFLECT`},
 		{Fn: []string{`usereflect.RangeValueTwo`, `usereflect.RangeValueTwo\$[12]`}},
@@ -254,12 +264,11 @@ func TestExpectedOutput(t *testing.T) {
 		{Fn: []string{"usereflect.CopyValueInStructField$"}},
 		{Fn: []string{"usereflect.RangeValue$"}},
 
-		// MaybeChmod type-asserts an io.Reader parameter to an interface whose
-		// method set contains Chmod, so that (*os.File).Chmod can be called if
-		// the user passes an argument with dynamic type *os.File.  No code in
-		// our testdata does this, so we do not warn about this code having an
-		// interesting capability, but perhaps it would be good to do so.
-		{Fn: []string{`indirectcalls.MaybeChmod`, `\(*os.File\).Chmod`}},
+		// Unknown callbacks must not be silently treated as safe.  These
+		// functions still use reflect, but they do not acquire the capability
+		// of the callback.
+		{Fn: []string{"usereflect.ReflectSafeCallback", "callnet.Foo"}},
+		{Fn: []string{"usereflect.ReflectUnknownCallback", "callnet.Foo"}},
 	}
 	for _, path := range unexpectedPaths {
 		if matches, err := path.matches(cil); err != nil {
